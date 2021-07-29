@@ -61,7 +61,7 @@ def get_parser():
     parser.add_argument(
         "--confidence-threshold",
         type=float,
-        default=0.5,
+        default=0.95,
         help="Minimum score for instance predictions to be shown",
     )
     parser.add_argument(
@@ -72,31 +72,14 @@ def get_parser():
     )
     return parser
 
-
-def test_opencv_video_format(codec, file_ext):
-    with tempfile.TemporaryDirectory(prefix="video_format_test") as dir:
-        filename = os.path.join(dir, "test_file" + file_ext)
-        writer = cv2.VideoWriter(
-            filename=filename,
-            fourcc=cv2.VideoWriter_fourcc(*codec),
-            fps=float(30),
-            frameSize=(10, 10),
-            isColor=True,
-        )
-        [writer.write(np.zeros((10, 10, 3), np.uint8)) for _ in range(30)]
-        writer.release()
-        if os.path.isfile(filename):
-            return True
-        return False
-
-
+from detectron2.data import MetadataCatalog
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
     setup_logger(name="fvcore")
     logger = setup_logger()
     logger.info("Arguments: " + str(args))
-
+    MetadataCatalog.get("for_detectron_val").set(thing_classes=["Femur", "Tibia", "Guide"])
     cfg = setup_cfg(args)
 
     demo = VisualizationDemo(cfg)
@@ -105,9 +88,9 @@ if __name__ == "__main__":
         if len(args.input) == 1:
             args.input = glob.glob(os.path.expanduser(args.input[0]))
             assert args.input, "The input path(s) was not found"
-        for path in tqdm.tqdm(args.input, disable=not args.output):
+        for path in tqdm.tqdm(args.input, disable=not args.output)  :
             # use PIL, to be consistent with evaluation
-            img = read_image(path, format="BGR")
+            img = read_image(path, format="RGB")
             start_time = time.time()
             predictions, visualized_output = demo.run_on_image(img)
             logger.info(

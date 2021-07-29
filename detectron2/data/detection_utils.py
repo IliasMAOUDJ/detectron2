@@ -78,6 +78,7 @@ def convert_PIL_to_numpy(image, format):
     # PIL squeezes out the channel dimension for "L", so make it HWC
     if format == "L":
         image = np.expand_dims(image, -1)
+        
 
     # handle formats not supported by PIL
     elif format == "BGR":
