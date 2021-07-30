@@ -12,6 +12,7 @@ from .build import (
 from .catalog import DatasetCatalog, MetadataCatalog, Metadata
 from .common import DatasetFromList, MapDataset
 from .dataset_mapper import DatasetMapper
+from .latim_dataset import *
 
 # ensure the builtin datasets are registered
 from . import datasets, samplers  # isort:skip

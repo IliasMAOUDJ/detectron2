@@ -11,7 +11,7 @@ from detectron2.data import MetadataCatalog, DatasetCatalog, DatasetMapper
 from detectron2.data import transforms as T
 
 from detectron2.structures import BoxMode
-
+from detectron2.data import get_latim_dicts
 import detectron2.utils.comm as comm
 import logging
 logger = logging.getLogger("detectron2")
@@ -118,6 +118,7 @@ from shutil import rmtree
 from tqdm import tqdm
 import sys
 sys.path.append("../")
+
 from detectron2.data import gen_latim_dataset
 
 from detectron2.checkpoint import DetectionCheckpointer
@@ -136,8 +137,8 @@ if __name__ == "__main__":
     pred_dir=dir_name+"/vis_pred/"
     os.mkdir(pred_dir)
     
-    femur_tool_metadata = MetadataCatalog.get("for_detectron_val")
-    dataset_dicts = get_latim_dicts("dataset/val", real=True)
+    femur_tool_metadata = MetadataCatalog.get("for_detectron/train")
+    dataset_dicts = get_latim_dicts("dataset/train")
     predictor = DefaultPredictor(cfg)
     for d in tqdm(dataset_dicts):  
         im = cv2.imread(d["file_name"])

@@ -6,7 +6,7 @@ import cv2
 from imantics import Polygons, Mask
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.structures import BoxMode
-
+import skimage.io as io
 def get_BB(img_filename):
     im = PIL.Image.open(img_filename)
     pixels = np.array(im.getdata()).reshape((im.size[1], im.size[0]))
@@ -59,8 +59,7 @@ def get_latim_dicts(img_dir, real=False):
             dataset_dicts.append(record)
     else:
         indices_file = os.path.join(img_dir, "indices.npy")
-        split_file = os.path.join(img_dir, '{:s}'.format(indices_file))
-        image_id = np.load(split_file)
+        image_id = np.load(indices_file)
         image_id =image_id
         for i in image_id:
             record = {}
@@ -96,8 +95,8 @@ def get_latim_dicts(img_dir, real=False):
 def gen_latim_dataset():
     for d in ["train", "val"]:
         if(d=="train"):
-            DatasetCatalog.register("for_detectron_synth_" + d, lambda d=d: get_latim_dicts("/dataset/" + d))
-            MetadataCatalog.get("for_detectron_synth_" + d).set(thing_classes=["Femur", "Tibia", "Guide"])
+            DatasetCatalog.register("for_detectron_" + d, lambda d=d: get_latim_dicts("dataset/" + d))
+            MetadataCatalog.get("for_detectron_" + d).set(thing_classes=["Femur", "Tibia", "Guide"])
         else:
-            MetadataCatalog.get("for_detectron_synth_" + d).set(thing_classes=["Femur", "Tibia", "Guide"], evaluator_type="coco")
-            DatasetCatalog.register("for_detectron_synth_" + d, lambda d=d: get_latim_dicts("/dataset/" + d, real=True))
+            MetadataCatalog.get("for_detectron_" + d).set(thing_classes=["Femur", "Tibia", "Guide"], evaluator_type="coco")
+            DatasetCatalog.register("for_detectron_" + d, lambda d=d: get_latim_dicts("dataset/" + d, real=True))
