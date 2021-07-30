@@ -1,12 +1,12 @@
-_BASE_: "../configs/Base-RCNN-FPN.yaml"
+_BASE_: "../../configs/Base-RCNN-FPN.yaml"
 INPUT:
   FORMAT: BGR
 MODEL:
-  WEIGHTS: "model_0014999.pth"
+  WEIGHTS: ""
   MASK_ON: True
   RESNETS:
     DEPTH: 50
-  PIXEL_MEAN: [60.0, 180.0, 180.0]
+  PIXEL_MEAN: [30.0, 30.0, 30.0]
 DATASETS:
   TEST: [for_detectron_val,]
 

@@ -1,0 +1,12 @@
+_BASE_: "../../configs/Base-RCNN-FPN.yaml"
+INPUT:
+  FORMAT: BGR
+MODEL:
+  WEIGHTS: "no_contrast_101.pth"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 101
+  PIXEL_MEAN: [30.0, 180.0, 180.0]
+DATASETS:
+  TEST: [for_detectron_val,]
+

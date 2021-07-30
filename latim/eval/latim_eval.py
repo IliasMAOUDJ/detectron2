@@ -16,92 +16,6 @@ import detectron2.utils.comm as comm
 import logging
 logger = logging.getLogger("detectron2")
 
-CATEGORY_ID = {"Femur": 0, "Tibia": 1, "Guide": 2}
-def get_latim_dicts(img_dir, real=False):
-    dataset_dicts = []
-    if(real==True):
-        json_file = os.path.join(img_dir, "real_data_annot_json.json")
-        with open(json_file) as f:
-            imgs_anns = json.load(f)
-
-        annos = list(imgs_anns.values())
-        annos = [v for v in annos if v["regions"]]
-        for idx, v in enumerate(annos):
-            record = {}
-            filename = os.path.join(img_dir, v["filename"])
-            height, width = cv2.imread(filename).shape[:2]
-            record["file_name"] = filename
-            record["image_id"] = idx
-            record["height"] = height
-            record["width"] = width
-            objs = []
-            anno = [r['shape_attributes'] for r in v['regions']]
-            class_ids = [r['region_attributes'] for r in v['regions']]
-            
-            for region, class_id in zip(anno, class_ids):
-                px = region["all_points_x"]
-                py = region["all_points_y"]
-                poly = [(x + 0.5, y + 0.5) for x, y in zip(px, py)]
-                poly = [p for x in poly for p in x]
-                obj = {
-                    "bbox": [np.min(px), np.min(py), np.max(px), np.max(py)],
-                    "bbox_mode": BoxMode.XYXY_ABS,
-                    "segmentation": [poly],
-                    "category_id": CATEGORY_ID[class_id["type"]],
-                }
-                objs.append(obj)
-                    
-            record["annotations"] = objs
-            dataset_dicts.append(record)
-    else:
-        indices_file = os.path.join(img_dir, "indices.npy")
-        split_file = os.path.join(img_dir, '{:s}'.format(indices_file))
-        image_id = np.load(split_file)
-        image_id =image_id
-        for i in image_id:
-            record = {}
-            filename = os.path.join(img_dir, '{:06d}.png'.format(i))
-            height, width = cv2.imread(filename).shape[:2]
-            class_ids = np.load(os.path.join(img_dir, "../labels",'{:06d}.npy'.format(i)))
-            record["file_name"] = filename
-            record["image_id"] = i
-            record["height"] = height
-            record["width"] = width
-            objs = []
-            masks = os.path.join(img_dir, "../semantic_masks/",'{:06d}.png'.format(i))
-            all_masks = io.imread(masks)
-            bbox = get_BB(masks)
-            cnt=0
-            for j in np.arange(1,len(bbox)+1):
-                mask = np.asarray(all_masks==j, dtype= np.uint8)
-                polygons = Mask(mask).polygons()
-                polygons = [p for x in polygons for p in x]
-                obj = {
-                    "bbox": bbox[cnt],
-                    "bbox_mode": BoxMode.XYXY_ABS,
-                    "segmentation": [polygons],
-                    "category_id": j-1,
-                }       
-                cnt +=1
-                objs.append(obj)
-            record["annotations"] = objs
-            dataset_dicts.append(record)
-
-    return dataset_dicts
-    
-import PIL.Image
-def get_BB(img_filename):
-    im = PIL.Image.open(img_filename)
-    pixels = np.array(im.getdata()).reshape((im.size[1], im.size[0]))
-    objects=[]
-    for i in range(1,np.max(pixels)+1):
-        if(i in pixels):
-            objects.append([np.min(np.where(pixels == i)[1]),
-                            np.min(np.where(pixels == i)[0]),
-                            np.max(np.where(pixels == i)[1]),
-                            np.max(np.where(pixels == i)[0])])
-    return objects
-
 def get_evaluator(cfg, dataset_name, output_folder=None):
     """
     Create evaluator(s) for a given dataset.
@@ -202,17 +116,18 @@ from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.data.datasets import register_coco_instances
 from shutil import rmtree
 from tqdm import tqdm
+import sys
+sys.path.append("../")
+from detectron2.data import gen_latim_dataset
+
 from detectron2.checkpoint import DetectionCheckpointer
 if __name__ == "__main__":
     args = get_parser().parse_args()
     cfg = setup_cfg(args)
     
-    for d in ["val"]:
-        MetadataCatalog.get("for_detectron_" + d).set(thing_classes=["Femur", "Tibia", "Guide"], evaluator_type="coco")
-        DatasetCatalog.register("for_detectron_" + d, lambda d=d: get_latim_dicts("dataset/" + d, real=True))
-    
+    gen_latim_dataset()
+
     dir_name= cfg.MODEL.WEIGHTS.split(".")[0]
-    rmtree("output")
     if os.path.exists(dir_name):
         rmtree(dir_name)
     os.mkdir(dir_name)
@@ -222,7 +137,6 @@ if __name__ == "__main__":
     os.mkdir(pred_dir)
     
     femur_tool_metadata = MetadataCatalog.get("for_detectron_val")
-    convert_to_coco_json("for_detectron_val", "output/output.json", allow_cached=False)
     dataset_dicts = get_latim_dicts("dataset/val", real=True)
     predictor = DefaultPredictor(cfg)
     for d in tqdm(dataset_dicts):  
